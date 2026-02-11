@@ -1,57 +1,92 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>MateTap 🧉</title>
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <style>
-    body {
-      background: #0f172a;
-      color: white;
-      text-align: center;
-      font-family: Arial;
-      margin-top: 50px;
-    }
+<meta charset="UTF-8">
+<title>MateTap 🧉</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 
-    h1 {
-      font-size: 40px;
-    }
+<style>
+body {
+  margin:0;
+  font-family: Arial, sans-serif;
+  background: radial-gradient(circle at top, #1e293b, #0f172a);
+  color:white;
+  text-align:center;
+  overflow:hidden;
+}
 
-    #points {
-      font-size: 30px;
-      margin: 20px;
-    }
+h1 {
+  margin-top:40px;
+  font-size:45px;
+  text-shadow:0 0 20px #22c55e;
+}
 
-    button {
-      background: #22c55e;
-      border: none;
-      padding: 20px 40px;
-      font-size: 25px;
-      border-radius: 15px;
-      cursor: pointer;
-    }
+#points {
+  font-size:50px;
+  margin:20px;
+  font-weight:bold;
+}
 
-    button:active {
-      transform: scale(0.95);
-    }
-  </style>
+#mate {
+  font-size:120px;
+  cursor:pointer;
+  transition: transform 0.1s;
+}
+
+#mate:active {
+  transform: scale(0.85) rotate(-10deg);
+}
+
+.floating {
+  position:absolute;
+  color:#22c55e;
+  font-weight:bold;
+  animation: floatUp 1s ease-out forwards;
+}
+
+@keyframes floatUp {
+  0% {opacity:1; transform: translateY(0);}
+  100% {opacity:0; transform: translateY(-100px);}
+}
+
+</style>
 </head>
+
 <body>
 
-  <h1>🧉 MateTap</h1>
-  <div id="points">0 puntos</div>
-  <button onclick="addPoint()">TOMAR MATE</button>
+<h1>🧉 MATE TAP</h1>
+<div id="points">0</div>
+<div id="mate">🧉</div>
 
-  <script>
-    let points = 0;
+<audio id="sound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-click-1114.mp3"></audio>
 
-    function addPoint() {
-      points++;
-      document.getElementById("points").innerText = points + " puntos";
-    }
+<script>
 
-    Telegram.WebApp.ready();
-  </script>
+let points = 0;
+
+const mate = document.getElementById("mate");
+const pointsText = document.getElementById("points");
+const sound = document.getElementById("sound");
+
+mate.addEventListener("click", function(e) {
+  points++;
+  pointsText.innerText = points;
+  sound.currentTime = 0;
+  sound.play();
+
+  const plus = document.createElement("div");
+  plus.classList.add("floating");
+  plus.innerText = "+1 🧉";
+  plus.style.left = e.pageX + "px";
+  plus.style.top = e.pageY + "px";
+  document.body.appendChild(plus);
+
+  setTimeout(() => plus.remove(), 1000);
+});
+
+Telegram.WebApp.ready();
+
+</script>
 
 </body>
 </html>
