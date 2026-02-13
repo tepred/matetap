@@ -1,11 +1,16 @@
+<script>
 Telegram.WebApp.ready();
 
-// 🔥 GUARDAR PUNTAJE DESPUÉS DE 10 SEGUNDOS
-setTimeout(() => {
-  saveScore("Marco", points);
-  console.log("Puntaje guardado:", points);
-}, 10000);
+mate.addEventListener("click", function(e) {
+  points++;
+  pointsText.innerText = points;
+  sound.currentTime = 0;
+  sound.play();
 
+  if (points === 10) {
+    saveScore("Marco", points);
+  }
+});
 </script>
 
 <script type="module">
@@ -33,6 +38,3 @@ setTimeout(() => {
     });
   };
 </script>
-
-</body>
-</html>
