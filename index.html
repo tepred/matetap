@@ -1,91 +1,36 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>MateTap 🧉</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
-
-<style>
-body {
-  margin:0;
-  font-family: Arial, sans-serif;
-  background: radial-gradient(circle at top, #1e293b, #0f172a);
-  color:white;
-  text-align:center;
-  overflow:hidden;
-}
-
-h1 {
-  margin-top:40px;
-  font-size:45px;
-  text-shadow:0 0 20px #22c55e;
-}
-
-#points {
-  font-size:50px;
-  margin:20px;
-  font-weight:bold;
-}
-
-#mate {
-  font-size:120px;
-  cursor:pointer;
-  transition: transform 0.1s;
-}
-
-#mate:active {
-  transform: scale(0.85) rotate(-10deg);
-}
-
-.floating {
-  position:absolute;
-  color:#22c55e;
-  font-weight:bold;
-  animation: floatUp 1s ease-out forwards;
-}
-
-@keyframes floatUp {
-  0% {opacity:1; transform: translateY(0);}
-  100% {opacity:0; transform: translateY(-100px);}
-}
-
-</style>
-</head>
-
-<body>
-
-<h1>🧉 MATE TAP</h1>
-<div id="points">0</div>
-<div id="mate">🧉</div>
-
-<audio id="sound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-click-1114.mp3"></audio>
-
-<script>
-
-let points = 0;
-
-const mate = document.getElementById("mate");
-const pointsText = document.getElementById("points");
-const sound = document.getElementById("sound");
-
-mate.addEventListener("click", function(e) {
-  points++;
-  pointsText.innerText = points;
-  sound.currentTime = 0;
-  sound.play();
-
-  const plus = document.createElement("div");
-  plus.classList.add("floating");
-  plus.innerText = "+1 🧉";
-  plus.style.left = e.pageX + "px";
-  plus.style.top = e.pageY + "px";
-  document.body.appendChild(plus);
-
-  setTimeout(() => plus.remove(), 1000);
-});
-
 Telegram.WebApp.ready();
 
+// 🔥 GUARDAR PUNTAJE DESPUÉS DE 10 SEGUNDOS
+setTimeout(() => {
+  saveScore("Marco", points);
+  console.log("Puntaje guardado:", points);
+}, 10000);
+
+</script>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+  import { getFirestore, collection, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "ACA_TU_API_KEY",
+    authDomain: "ACA_TU_AUTH_DOMAIN",
+    projectId: "ACA_TU_PROJECT_ID",
+    storageBucket: "ACA_TU_STORAGE",
+    messagingSenderId: "ACA_TU_SENDER_ID",
+    appId: "ACA_TU_APP_ID"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.saveScore = async function(name, score) {
+    await addDoc(collection(db, "leaderboard"), {
+      name: name,
+      score: score,
+      createdAt: Date.now()
+    });
+  };
 </script>
 
 </body>
