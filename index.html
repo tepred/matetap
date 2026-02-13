@@ -7,41 +7,41 @@
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;}
+body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#0f172a;color:white;}
 #bgCanvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:-1;}
-h1,h2,h3{margin:5px;text-shadow:0 0 20px #22c55e;}
-#mate{width:180px;margin-top:30px;cursor:pointer;transition: transform 0.1s;}
-#mate:active{transform: scale(1.2) rotate(-15deg);}
-#points{font-size:50px;margin:10px;font-weight:bold;color:#22c55e;text-shadow:0 0 15px #000;}
-.floating{position:absolute;font-weight:bold;font-size:20px;animation: floatUp 1s ease-out forwards;}
+h1{margin:20px;text-shadow:0 0 20px #22c55e;text-align:center;}
+#mate{display:block;margin:30px auto;width:180px;cursor:pointer;transition:transform 0.1s;}
+#mate:active{transform:scale(1.2) rotate(-15deg);}
+#points,#coins{font-size:40px;text-align:center;margin:10px;}
+.floating{position:absolute;font-weight:bold;font-size:20px;color:#22c55e;animation:floatUp 1s ease-out forwards;}
 @keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1);}50%{transform:translateY(-40px) scale(1.2);}100%{opacity:0;transform:translateY(-80px) scale(1);}}
-.powerup{position:absolute;font-size:35px;cursor:pointer;animation: floatUp 1.2s ease-out forwards;}
-.badge{position:absolute;font-size:25px;font-weight:bold;color:gold;animation: floatUp 2s ease-out forwards;}
 #ranking{margin:20px auto;background:rgba(0,0,0,0.5);padding:15px;border-radius:10px;max-width:350px;color:white;}
 .player{display:flex;justify-content:space-between;margin:5px 0;}
-#skinsMenu button{padding:5px 10px;border:none;border-radius:5px;cursor:pointer;background:rgba(255,255,255,0.2);color:white;margin:3px;}
+#skinsMenu{text-align:center;margin:10px;}
+#skinsMenu button{padding:5px 10px;margin:3px;border:none;border-radius:5px;background:rgba(255,255,255,0.2);color:white;cursor:pointer;}
 #skinsMenu button:disabled{opacity:0.5;cursor:not-allowed;}
 </style>
 </head>
 
 <body>
+
 <canvas id="bgCanvas"></canvas>
 
 <h1 id="points">0 🧉</h1>
-<img id="mate" src="https://i.imgur.com/7QF5Y6H.png">
-<audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-click-1114.mp3"></audio>
-<audio id="levelSound" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.wav"></audio>
-<audio id="powerupSound" src="https://assets.mixkit.co/sfx/preview/mixkit-magic-chime-2.mp3"></audio>
-<audio id="badgeSound" src="https://assets.mixkit.co/sfx/preview/mixkit-fantasy-bonus-530.wav"></audio>
+<img id="mate" src="assets/mate.png">
+<h2>💰 Monedas: <span id="coins">0</span></h2>
 
 <div id="ranking">
 <h2>🏆 Top 10 Ranking</h2>
 <div id="rankingList"></div>
 </div>
 
-<h3>💰 Monedas: <span id="coins">0</span></h3>
 <h3>🎨 Skins</h3>
 <div id="skinsMenu"></div>
+
+<audio id="clickSound" src="assets/click.mp3"></audio>
+<audio id="powerupSound" src="assets/powerup.mp3"></audio>
+<audio id="badgeSound" src="assets/badge.mp3"></audio>
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -69,7 +69,6 @@ const coinsText=document.getElementById("coins");
 const rankingList=document.getElementById("rankingList");
 const skinsMenu=document.getElementById("skinsMenu");
 const clickSound=document.getElementById("clickSound");
-const levelSound=document.getElementById("levelSound");
 const powerupSound=document.getElementById("powerupSound");
 const badgeSound=document.getElementById("badgeSound");
 
@@ -78,10 +77,10 @@ const username=Telegram.WebApp.initDataUnsafe.user?.username||"Anon";
 
 // 🔹 Skins
 const skins=[
-  {name:"Default", src:"https://i.imgur.com/7QF5Y6H.png", cost:0},
-  {name:"Fuego", src:"https://i.imgur.com/f9a1XQm.png", cost:20},
-  {name:"Hielo", src:"https://i.imgur.com/J8l5P4u.png", cost:50},
-  {name:"Neon", src:"https://i.imgur.com/BmC47fo.png", cost:100}
+  {name:"Default", src:"assets/mate.png", cost:0},
+  {name:"Fuego", src:"assets/mate_fuego.png", cost:20},
+  {name:"Hielo", src:"assets/mate_hielo.png", cost:50},
+  {name:"Neon", src:"assets/mate_neon.png", cost:100}
 ];
 let unlocked=JSON.parse(localStorage.getItem("skinsUnlocked")||'["Default"]');
 let activeSkin=localStorage.getItem("activeSkin")||"Default";
@@ -89,7 +88,7 @@ let activeSkin=localStorage.getItem("activeSkin")||"Default";
 // 🔹 State
 let points=0, coins=0;
 
-// 🔹 Fondo animado con partículas
+// 🔹 Fondo partículas
 const canvas=document.getElementById("bgCanvas");
 const ctx=canvas.getContext("2d");
 canvas.width=window.innerWidth; canvas.height=window.innerHeight;
@@ -171,8 +170,8 @@ function spawnFloating(e){
 mate.addEventListener("click",(e)=>{
   points++; pointsText.innerText=points+" 🧉"; clickSound.currentTime=0; clickSound.play();
   spawnFloating(e);
-  if(points%10===0){coins++; coinsText.innerText=coins; powerupSound.play();}
-  if(points%50===0){badgeSound.play();}
+  if(points%10===0){coins++; coinsText.innerText=coins; powerupSound.currentTime=0; powerupSound.play();}
+  if(points%50===0){badgeSound.currentTime=0; badgeSound.play();}
   saveUser();
 });
 
@@ -196,7 +195,7 @@ async function saveScore(){
 // 🔹 Inicializar
 loadUser(); loadRanking();
 setInterval(saveScore,15000);
-
 </script>
+
 </body>
 </html>
