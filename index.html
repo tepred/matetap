@@ -2,13 +2,13 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>MateTap PRO MAX 🧉</title>
+<title>MateTap ULTRA 🧉</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
 body {margin:0;font-family:Arial,sans-serif;text-align:center;background: radial-gradient(circle at top,#0f172a,#1e293b);color:white;overflow:hidden;}
-h1,h2,h3{margin:10px;text-shadow:0 0 15px #22c55e;}
+h1,h2,h3{margin:10px;text-shadow:0 0 20px #22c55e;}
 #mate {width:180px;margin-top:30px;cursor:pointer;transition: transform 0.1s;}
 #mate:active {transform: scale(1.2) rotate(-10deg);}
 #ranking {margin:20px auto;background: rgba(255,255,255,0.1);padding:15px;border-radius:10px;max-width:350px;}
@@ -17,7 +17,7 @@ h1,h2,h3{margin:10px;text-shadow:0 0 15px #22c55e;}
 @keyframes floatUp {0% {opacity:1; transform: translateY(0) scale(1);}50% {transform: translateY(-40px) scale(1.2);}100% {opacity:0; transform: translateY(-80px) scale(1);}}
 #skinsMenu button {padding:5px 10px;border:none;border-radius:5px;cursor:pointer;background:rgba(255,255,255,0.2);color:white;margin:3px;}
 #skinsMenu button:disabled {opacity:0.5;cursor:not-allowed;}
-.powerup {position:absolute;font-size:30px;cursor:pointer;animation: floatUp 1.2s ease-out forwards;}
+.powerup {position:absolute;font-size:35px;cursor:pointer;animation: floatUp 1.2s ease-out forwards;}
 .badge {position:absolute;font-size:25px;font-weight:bold;color:gold;animation: floatUp 2s ease-out forwards;}
 </style>
 </head>
@@ -29,6 +29,7 @@ h1,h2,h3{margin:10px;text-shadow:0 0 15px #22c55e;}
 <audio id="clickSound" src="https://assets.mixkit.co/sfx/preview/mixkit-game-click-1114.mp3"></audio>
 <audio id="levelSound" src="https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.wav"></audio>
 <audio id="powerupSound" src="https://assets.mixkit.co/sfx/preview/mixkit-magic-chime-2.mp3"></audio>
+<audio id="badgeSound" src="https://assets.mixkit.co/sfx/preview/mixkit-fantasy-bonus-530.wav"></audio>
 
 <div id="ranking">
   <h2>🏆 Top 10 Ranking</h2>
@@ -43,7 +44,7 @@ h1,h2,h3{margin:10px;text-shadow:0 0 15px #22c55e;}
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-// 🔹 Firebase config
+// 🔹 Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyB76iQtr2i3hG6TIgIpdn3W6rdaxMK9wFQ",
   authDomain: "matetap-e96c3.firebaseapp.com",
@@ -55,9 +56,10 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
+// 🔹 Telegram
 Telegram.WebApp.ready();
 
-// 🔹 DOM Elements
+// 🔹 DOM
 const mate=document.getElementById("mate");
 const pointsText=document.getElementById("points");
 const coinsText=document.getElementById("coins");
@@ -66,6 +68,7 @@ const skinsMenu=document.getElementById("skinsMenu");
 const clickSound=document.getElementById("clickSound");
 const levelSound=document.getElementById("levelSound");
 const powerupSound=document.getElementById("powerupSound");
+const badgeSound=document.getElementById("badgeSound");
 
 // 🔹 User
 const username=Telegram.WebApp.initDataUnsafe.user?.username || "Anon";
@@ -74,7 +77,8 @@ const username=Telegram.WebApp.initDataUnsafe.user?.username || "Anon";
 const skins=[
   {name:"Default", src:"https://i.imgur.com/7QF5Y6H.png", cost:0},
   {name:"Fuego", src:"https://i.imgur.com/f9a1XQm.png", cost:20},
-  {name:"Hielo", src:"https://i.imgur.com/J8l5P4u.png", cost:50}
+  {name:"Hielo", src:"https://i.imgur.com/J8l5P4u.png", cost:50},
+  {name:"Neon", src:"https://i.imgur.com/BmC47fo.png", cost:100}
 ];
 let unlocked=JSON.parse(localStorage.getItem("skinsUnlocked")||'["Default"]');
 let activeSkin=localStorage.getItem("activeSkin")||"Default";
@@ -82,7 +86,7 @@ let activeSkin=localStorage.getItem("activeSkin")||"Default";
 // 🔹 State
 let points=0, coins=0;
 
-// 🔹 Load user data
+// 🔹 Load user
 async function loadUser(){
   const userDoc=doc(db,"users",username);
   const snapshot=await getDoc(userDoc);
@@ -134,6 +138,7 @@ function spawnFloating(e){
   plus.classList.add("floating");
   if(activeSkin==="Fuego"){plus.innerText="🔥+1🔥"; plus.style.color="orange";}
   else if(activeSkin==="Hielo"){plus.innerText="❄️+1❄️"; plus.style.color="cyan";}
+  else if(activeSkin==="Neon"){plus.innerText="💡+1💡"; plus.style.color="magenta";}
   else{plus.innerText="+1 🧉"; plus.style.color="#22c55e";}
   const offsetX=Math.random()*40-20;
   const offsetY=Math.random()*40-20;
@@ -143,20 +148,6 @@ function spawnFloating(e){
   plus.style.transform=`rotate(${Math.random()*360}deg)`;
   document.body.appendChild(plus);
   setTimeout(()=>plus.remove(),1200);
-
-  if(activeSkin==="Fuego"||activeSkin==="Hielo"){
-    for(let i=0;i<5;i++){
-      const p=document.createElement("div");
-      p.classList.add("floating");
-      p.innerText=activeSkin==="Fuego"?"🔥":"❄️";
-      p.style.left=(e.pageX+Math.random()*60-30)+"px";
-      p.style.top=(e.pageY+Math.random()*60-30)+"px";
-      p.style.fontSize=(10+Math.random()*15)+"px";
-      p.style.color=activeSkin==="Fuego"?"orange":"cyan";
-      document.body.appendChild(p);
-      setTimeout(()=>p.remove(),1000+Math.random()*500);
-    }
-  }
 }
 
 // 🔹 Level up
@@ -171,11 +162,26 @@ function showLevelUp(level){
   setTimeout(()=>lev.remove(),2000);
 }
 
+// 🔹 Badges
+function checkBadges(){
+  const badgeDiv=document.createElement("div");
+  badgeDiv.classList.add("badge");
+  if(points===50){badgeDiv.innerText="🏅 Novato"; badgeSound.play();}
+  else if(points===100){badgeDiv.innerText="🏅 Experto"; badgeSound.play();}
+  else if(points===200){badgeDiv.innerText="🏅 Maestro"; badgeSound.play();}
+  else return;
+  badgeDiv.style.left="50%"; badgeDiv.style.top="50%";
+  document.body.appendChild(badgeDiv);
+  setTimeout(()=>badgeDiv.remove(),2500);
+}
+
 // 🔹 Power-ups
 function spawnPowerup(){
   const pu=document.createElement("div");
   pu.classList.add("powerup");
-  pu.innerText="💎";
+  const types=["💎","💥","✨"];
+  const type=types[Math.floor(Math.random()*types.length)];
+  pu.innerText=type;
   pu.style.left=Math.random()*window.innerWidth+"px";
   pu.style.top=Math.random()*window.innerHeight+"px";
   document.body.appendChild(pu);
@@ -183,7 +189,9 @@ function spawnPowerup(){
     points+=5; coins+=2;
     pointsText.innerText=points+" 🧉"; coinsText.innerText=coins;
     powerupSound.currentTime=0; powerupSound.play();
-    pu.remove(); saveUser();
+    pu.remove();
+    saveUser();
+    checkBadges();
   };
   setTimeout(()=>{if(document.body.contains(pu)) pu.remove();},5000);
 }
@@ -197,6 +205,7 @@ mate.addEventListener("click",(e)=>{
   spawnFloating(e);
   const level=getLevel(points);
   if(level>getLevel(points-1)) showLevelUp(level);
+  checkBadges();
   saveUser();
 });
 
@@ -216,9 +225,10 @@ async function saveScore(){
   await addDoc(collection(db,"leaderboard"),{name:username,score:points,coins,createdAt:Date.now()});
   loadRanking();
 }
+
 loadUser(); loadRanking();
 setInterval(saveScore,15000);
 </script>
 
 </body>
-</html>
+  </html>
