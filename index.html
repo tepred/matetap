@@ -3,29 +3,28 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MateTap ULTRA PRO 🧉</title>
+<title>MateTap Deluxe 🧉</title>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 
 <style>
-body, html {margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;}
-#bgCanvas {position:absolute;top:0;left:0;width:100%;height:100%;z-index:-1;}
-h1,h2,h3 {margin:5px;text-shadow:0 0 20px #22c55e;}
-#mate {width:180px;margin-top:30px;cursor:pointer;transition: transform 0.1s;}
-#mate:active {transform: scale(1.2) rotate(-10deg);}
-#points {font-size:50px;margin:10px;font-weight:bold;color:#22c55e;text-shadow:0 0 10px #000;}
-.floating {position:absolute;font-weight:bold;font-size:20px;animation: floatUp 1s ease-out forwards;}
-@keyframes floatUp {0% {opacity:1; transform: translateY(0) scale(1);}50% {transform: translateY(-40px) scale(1.2);}100% {opacity:0; transform: translateY(-80px) scale(1);}}
-.powerup {position:absolute;font-size:35px;cursor:pointer;animation: floatUp 1.2s ease-out forwards;}
-.badge {position:absolute;font-size:25px;font-weight:bold;color:gold;animation: floatUp 2s ease-out forwards;}
-#ranking {margin:20px auto;background: rgba(0,0,0,0.5);padding:15px;border-radius:10px;max-width:350px;color:white;}
-.player {display:flex;justify-content:space-between;margin:5px 0;}
-#skinsMenu button {padding:5px 10px;border:none;border-radius:5px;cursor:pointer;background:rgba(255,255,255,0.2);color:white;margin:3px;}
-#skinsMenu button:disabled {opacity:0.5;cursor:not-allowed;}
+body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;}
+#bgCanvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:-1;}
+h1,h2,h3{margin:5px;text-shadow:0 0 20px #22c55e;}
+#mate{width:180px;margin-top:30px;cursor:pointer;transition: transform 0.1s;}
+#mate:active{transform: scale(1.2) rotate(-15deg);}
+#points{font-size:50px;margin:10px;font-weight:bold;color:#22c55e;text-shadow:0 0 15px #000;}
+.floating{position:absolute;font-weight:bold;font-size:20px;animation: floatUp 1s ease-out forwards;}
+@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1);}50%{transform:translateY(-40px) scale(1.2);}100%{opacity:0;transform:translateY(-80px) scale(1);}}
+.powerup{position:absolute;font-size:35px;cursor:pointer;animation: floatUp 1.2s ease-out forwards;}
+.badge{position:absolute;font-size:25px;font-weight:bold;color:gold;animation: floatUp 2s ease-out forwards;}
+#ranking{margin:20px auto;background:rgba(0,0,0,0.5);padding:15px;border-radius:10px;max-width:350px;color:white;}
+.player{display:flex;justify-content:space-between;margin:5px 0;}
+#skinsMenu button{padding:5px 10px;border:none;border-radius:5px;cursor:pointer;background:rgba(255,255,255,0.2);color:white;margin:3px;}
+#skinsMenu button:disabled{opacity:0.5;cursor:not-allowed;}
 </style>
 </head>
 
 <body>
-
 <canvas id="bgCanvas"></canvas>
 
 <h1 id="points">0 🧉</h1>
@@ -36,8 +35,8 @@ h1,h2,h3 {margin:5px;text-shadow:0 0 20px #22c55e;}
 <audio id="badgeSound" src="https://assets.mixkit.co/sfx/preview/mixkit-fantasy-bonus-530.wav"></audio>
 
 <div id="ranking">
-  <h2>🏆 Top 10 Ranking</h2>
-  <div id="rankingList"></div>
+<h2>🏆 Top 10 Ranking</h2>
+<div id="rankingList"></div>
 </div>
 
 <h3>💰 Monedas: <span id="coins">0</span></h3>
@@ -75,7 +74,7 @@ const powerupSound=document.getElementById("powerupSound");
 const badgeSound=document.getElementById("badgeSound");
 
 // 🔹 User
-const username=Telegram.WebApp.initDataUnsafe.user?.username || "Anon";
+const username=Telegram.WebApp.initDataUnsafe.user?.username||"Anon";
 
 // 🔹 Skins
 const skins=[
@@ -95,7 +94,7 @@ const canvas=document.getElementById("bgCanvas");
 const ctx=canvas.getContext("2d");
 canvas.width=window.innerWidth; canvas.height=window.innerHeight;
 let particles=[];
-for(let i=0;i<100;i++){particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*3+1,dx:(Math.random()-0.5)*1,dy:(Math.random()-0.5)*1})}
+for(let i=0;i<150;i++){particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*4+1,dx:(Math.random()-0.5)*1.5,dy:(Math.random()-0.5)*1.5})}
 function drawParticles(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   particles.forEach(p=>{
@@ -172,7 +171,8 @@ function spawnFloating(e){
 mate.addEventListener("click",(e)=>{
   points++; pointsText.innerText=points+" 🧉"; clickSound.currentTime=0; clickSound.play();
   spawnFloating(e);
-  if(points%10===0){coins++; coinsText.innerText=coins;}
+  if(points%10===0){coins++; coinsText.innerText=coins; powerupSound.play();}
+  if(points%50===0){badgeSound.play();}
   saveUser();
 });
 
@@ -196,7 +196,7 @@ async function saveScore(){
 // 🔹 Inicializar
 loadUser(); loadRanking();
 setInterval(saveScore,15000);
-</script>
 
+</script>
 </body>
-</html>
+  </html>
