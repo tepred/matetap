@@ -3,198 +3,155 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MateTap Deluxe 🧉</title>
-<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<title>MateTap ULTRA 🧉</title>
 
 <style>
-body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;font-family:Arial,sans-serif;background:#0f172a;color:white;}
-#bgCanvas{position:absolute;top:0;left:0;width:100%;height:100%;z-index:-1;}
-h1{margin:20px;text-shadow:0 0 20px #22c55e;text-align:center;}
-#mate{display:block;margin:30px auto;width:180px;cursor:pointer;transition:transform 0.1s;}
-#mate:active{transform:scale(1.2) rotate(-15deg);}
-#points,#coins{font-size:40px;text-align:center;margin:10px;}
-.floating{position:absolute;font-weight:bold;font-size:20px;color:#22c55e;animation:floatUp 1s ease-out forwards;}
-@keyframes floatUp{0%{opacity:1;transform:translateY(0) scale(1);}50%{transform:translateY(-40px) scale(1.2);}100%{opacity:0;transform:translateY(-80px) scale(1);}}
-#ranking{margin:20px auto;background:rgba(0,0,0,0.5);padding:15px;border-radius:10px;max-width:350px;color:white;}
-.player{display:flex;justify-content:space-between;margin:5px 0;}
-#skinsMenu{text-align:center;margin:10px;}
-#skinsMenu button{padding:5px 10px;margin:3px;border:none;border-radius:5px;background:rgba(255,255,255,0.2);color:white;cursor:pointer;}
-#skinsMenu button:disabled{opacity:0.5;cursor:not-allowed;}
+body{
+  margin:0;
+  background:radial-gradient(circle at center,#0f172a,#020617);
+  overflow:hidden;
+  font-family:Arial;
+  text-align:center;
+  color:white;
+}
+
+#points{
+  font-size:48px;
+  margin-top:20px;
+  text-shadow:0 0 20px #22c55e;
+}
+
+#mate{
+  width:200px;
+  margin-top:40px;
+  cursor:pointer;
+  transition:transform 0.1s;
+}
+
+#mate:active{
+  transform:scale(1.2) rotate(-10deg);
+}
+
+.floating{
+  position:absolute;
+  color:#22c55e;
+  font-weight:bold;
+  animation:floatUp 1s forwards;
+}
+
+@keyframes floatUp{
+  0%{opacity:1; transform:translateY(0);}
+  100%{opacity:0; transform:translateY(-80px);}
+}
+
+canvas{
+  position:fixed;
+  top:0;
+  left:0;
+  z-index:-1;
+}
 </style>
 </head>
-
 <body>
 
-<canvas id="bgCanvas"></canvas>
+<canvas id="bg"></canvas>
 
-<h1 id="points">0 🧉</h1>
-<img id="mate" src="assets/mate.png">
-<h2>💰 Monedas: <span id="coins">0</span></h2>
+<div id="points">0 🧉</div>
 
-<div id="ranking">
-<h2>🏆 Top 10 Ranking</h2>
-<div id="rankingList"></div>
-</div>
+<!-- MATE SVG EMBEBIDO -->
+<svg id="mate" viewBox="0 0 200 250">
+  <ellipse cx="100" cy="200" rx="60" ry="20" fill="#78350f"/>
+  <path d="M40 60 Q100 0 160 60 L140 200 Q100 230 60 200 Z" fill="#a16207"/>
+  <ellipse cx="100" cy="60" rx="60" ry="25" fill="#15803d"/>
+  <rect x="130" y="0" width="10" height="80" fill="silver"/>
+</svg>
 
-<h3>🎨 Skins</h3>
-<div id="skinsMenu"></div>
-
-<audio id="clickSound" src="assets/click.mp3"></audio>
-<audio id="powerupSound" src="assets/powerup.mp3"></audio>
-<audio id="badgeSound" src="assets/badge.mp3"></audio>
-
-<script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy, limit, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-// 🔹 Firebase
-const firebaseConfig = {
-  apiKey: "AIzaSyB76iQtr2i3hG6TIgIpdn3W6rdaxMK9wFQ",
-  authDomain: "matetap-e96c3.firebaseapp.com",
-  projectId: "matetap-e96c3",
-  storageBucket: "matetap-e96c3.firebasestorage.app",
-  messagingSenderId: "894538866852",
-  appId: "1:894538866852:web:ac59889ebf0ec4d0bf0631"
-};
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
-
-// 🔹 Telegram
-Telegram.WebApp.ready();
-
-// 🔹 DOM
+<script>
+let points=0;
 const mate=document.getElementById("mate");
 const pointsText=document.getElementById("points");
-const coinsText=document.getElementById("coins");
-const rankingList=document.getElementById("rankingList");
-const skinsMenu=document.getElementById("skinsMenu");
-const clickSound=document.getElementById("clickSound");
-const powerupSound=document.getElementById("powerupSound");
-const badgeSound=document.getElementById("badgeSound");
 
-// 🔹 User
-const username=Telegram.WebApp.initDataUnsafe.user?.username||"Anon";
+/* 🔊 SONIDO GENERADO */
+function playSound(type){
+  const ctx=new (window.AudioContext||window.webkitAudioContext)();
+  const osc=ctx.createOscillator();
+  const gain=ctx.createGain();
 
-// 🔹 Skins
-const skins=[
-  {name:"Default", src:"assets/mate.png", cost:0},
-  {name:"Fuego", src:"assets/mate_fuego.png", cost:20},
-  {name:"Hielo", src:"assets/mate_hielo.png", cost:50},
-  {name:"Neon", src:"assets/mate_neon.png", cost:100}
-];
-let unlocked=JSON.parse(localStorage.getItem("skinsUnlocked")||'["Default"]');
-let activeSkin=localStorage.getItem("activeSkin")||"Default";
+  osc.connect(gain);
+  gain.connect(ctx.destination);
 
-// 🔹 State
-let points=0, coins=0;
+  if(type==="click") osc.frequency.value=400;
+  if(type==="power") osc.frequency.value=800;
+  if(type==="badge") osc.frequency.value=1200;
 
-// 🔹 Fondo partículas
-const canvas=document.getElementById("bgCanvas");
+  gain.gain.value=0.1;
+  osc.start();
+  osc.stop(ctx.currentTime+0.1);
+}
+
+/* ✨ PARTICULAS DE FONDO */
+const canvas=document.getElementById("bg");
 const ctx=canvas.getContext("2d");
-canvas.width=window.innerWidth; canvas.height=window.innerHeight;
+canvas.width=window.innerWidth;
+canvas.height=window.innerHeight;
+
 let particles=[];
-for(let i=0;i<150;i++){particles.push({x:Math.random()*canvas.width,y:Math.random()*canvas.height,r:Math.random()*4+1,dx:(Math.random()-0.5)*1.5,dy:(Math.random()-0.5)*1.5})}
-function drawParticles(){
+for(let i=0;i<120;i++){
+  particles.push({
+    x:Math.random()*canvas.width,
+    y:Math.random()*canvas.height,
+    r:Math.random()*3+1,
+    dx:(Math.random()-0.5)*1,
+    dy:(Math.random()-0.5)*1
+  });
+}
+
+function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
   particles.forEach(p=>{
     ctx.beginPath();
-    ctx.arc(p.x,p.y,p.r,0,2*Math.PI);
+    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
     ctx.fillStyle="rgba(34,197,94,0.5)";
     ctx.fill();
-    p.x+=p.dx; p.y+=p.dy;
-    if(p.x>canvas.width)p.x=0;if(p.x<0)p.x=canvas.width;
-    if(p.y>canvas.height)p.y=0;if(p.y<0)p.y=canvas.height;
+    p.x+=p.dx;
+    p.y+=p.dy;
+    if(p.x<0||p.x>canvas.width)p.dx*=-1;
+    if(p.y<0||p.y>canvas.height)p.dy*=-1;
   });
-  requestAnimationFrame(drawParticles);
+  requestAnimationFrame(draw);
 }
-drawParticles();
-window.addEventListener("resize",()=>{canvas.width=window.innerWidth;canvas.height=window.innerHeight});
+draw();
 
-// 🔹 Load user
-async function loadUser(){
-  const userDoc=doc(db,"users",username);
-  const snapshot=await getDoc(userDoc);
-  if(snapshot.exists()){
-    const data=snapshot.data();
-    points=data.points||0;
-    coins=data.coins||0;
-    unlocked=data.unlocked||unlocked;
-    activeSkin=data.activeSkin||activeSkin;
-  }
-  pointsText.innerText=points+" 🧉";
-  coinsText.innerText=coins;
-  mate.src=skins.find(s=>s.name===activeSkin).src;
-  updateSkinsMenu();
-}
-
-// 🔹 Save user
-async function saveUser(){
-  const userDoc=doc(db,"users",username);
-  await setDoc(userDoc,{points,coins,unlocked,activeSkin,updatedAt:Date.now()});
-}
-
-// 🔹 Skins menu
-function updateSkinsMenu(){
-  skinsMenu.innerHTML="";
-  skins.forEach(skin=>{
-    const btn=document.createElement("button");
-    btn.innerText=skin.name+(unlocked.includes(skin.name)?" ✅":" 💰"+skin.cost);
-    btn.disabled=!unlocked.includes(skin.name) && coins<skin.cost;
-    btn.onclick=()=>{
-      if(!unlocked.includes(skin.name)){
-        if(coins>=skin.cost){coins-=skin.cost; unlocked.push(skin.name);}
-        else{alert("No tienes suficientes monedas 💰");return;}
-      }
-      activeSkin=skin.name;
-      mate.src=skin.src;
-      localStorage.setItem("activeSkin",activeSkin);
-      localStorage.setItem("skinsUnlocked",JSON.stringify(unlocked));
-      updateSkinsMenu();
-      saveUser();
-    };
-    skinsMenu.appendChild(btn);
-  });
-}
-
-// 🔹 Floating points
-function spawnFloating(e){
-  const plus=document.createElement("div");
-  plus.classList.add("floating");
-  plus.innerText="+1 🧉";
-  plus.style.left=e.pageX+"px"; plus.style.top=e.pageY+"px";
-  document.body.appendChild(plus);
-  setTimeout(()=>plus.remove(),1200);
-}
-
-// 🔹 Click event
+/* 🧉 CLICK EVENT */
 mate.addEventListener("click",(e)=>{
-  points++; pointsText.innerText=points+" 🧉"; clickSound.currentTime=0; clickSound.play();
-  spawnFloating(e);
-  if(points%10===0){coins++; coinsText.innerText=coins; powerupSound.currentTime=0; powerupSound.play();}
-  if(points%50===0){badgeSound.currentTime=0; badgeSound.play();}
-  saveUser();
+  points++;
+  pointsText.innerText=points+" 🧉";
+  playSound("click");
+
+  // puntos flotantes
+  const plus=document.createElement("div");
+  plus.className="floating";
+  plus.innerText="+1";
+  plus.style.left=e.pageX+"px";
+  plus.style.top=e.pageY+"px";
+  document.body.appendChild(plus);
+  setTimeout(()=>plus.remove(),1000);
+
+  // power cada 10
+  if(points%10===0){
+    playSound("power");
+    document.body.style.background="radial-gradient(circle,#065f46,#020617)";
+    setTimeout(()=>{
+      document.body.style.background="radial-gradient(circle,#0f172a,#020617)";
+    },300);
+  }
+
+  // badge cada 50
+  if(points%50===0){
+    playSound("badge");
+    alert("🔥 LOGRO DESBLOQUEADO 🔥");
+  }
 });
-
-// 🔹 Leaderboard
-async function loadRanking(){
-  const q=query(collection(db,"leaderboard"),orderBy("score","desc"),limit(10));
-  const snapshot=await getDocs(q);
-  rankingList.innerHTML="";
-  snapshot.forEach(doc=>{
-    const data=doc.data();
-    rankingList.innerHTML+=`<div class="player"><span>${data.name}</span><span>${data.score} 🧉</span></div>`;
-  });
-}
-
-// 🔹 Auto-save score
-async function saveScore(){
-  await addDoc(collection(db,"leaderboard"),{name:username,score:points,coins,createdAt:Date.now()});
-  loadRanking();
-}
-
-// 🔹 Inicializar
-loadUser(); loadRanking();
-setInterval(saveScore,15000);
 </script>
 
 </body>
