@@ -3,155 +3,208 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MateTap ULTRA 🧉</title>
+<title>MateTap</title>
 
 <style>
 body{
-  margin:0;
-  background:radial-gradient(circle at center,#0f172a,#020617);
-  overflow:hidden;
-  font-family:Arial;
-  text-align:center;
-  color:white;
+margin:0;
+background: radial-gradient(circle at top,#1e3c2a,#0f1f16);
+font-family:Arial,Helvetica,sans-serif;
+color:white;
+text-align:center;
+overflow-x:hidden;
 }
 
-#points{
-  font-size:48px;
-  margin-top:20px;
-  text-shadow:0 0 20px #22c55e;
+h1{
+margin-top:20px;
+font-size:32px;
 }
 
-#mate{
-  width:200px;
-  margin-top:40px;
-  cursor:pointer;
-  transition:transform 0.1s;
+#coin{
+width:180px;
+cursor:pointer;
+transition:transform .08s;
 }
 
-#mate:active{
-  transform:scale(1.2) rotate(-10deg);
+#coin:active{
+transform:scale(.9);
 }
 
-.floating{
-  position:absolute;
-  color:#22c55e;
-  font-weight:bold;
-  animation:floatUp 1s forwards;
+.counter{
+font-size:28px;
+margin:15px;
+}
+
+.btn{
+background:#00ff88;
+border:none;
+padding:12px 20px;
+border-radius:12px;
+font-weight:bold;
+cursor:pointer;
+margin:6px;
+}
+
+.panel{
+background:rgba(255,255,255,0.08);
+padding:15px;
+margin:15px;
+border-radius:15px;
+}
+
+.float{
+position:absolute;
+font-weight:bold;
+color:#00ff88;
+animation:floatUp 1s ease-out forwards;
 }
 
 @keyframes floatUp{
-  0%{opacity:1; transform:translateY(0);}
-  100%{opacity:0; transform:translateY(-80px);}
+0%{opacity:1;transform:translateY(0);}
+100%{opacity:0;transform:translateY(-80px);}
 }
 
-canvas{
-  position:fixed;
-  top:0;
-  left:0;
-  z-index:-1;
+.rankItem{
+display:flex;
+justify-content:space-between;
+margin:6px 0;
 }
+
 </style>
 </head>
 <body>
 
-<canvas id="bg"></canvas>
+<h1>🧉 MateTap</h1>
 
-<div id="points">0 🧉</div>
+<div class="counter">
+<span id="score">0</span> mates
+</div>
 
-<!-- MATE SVG EMBEBIDO -->
-<svg id="mate" viewBox="0 0 200 250">
-  <ellipse cx="100" cy="200" rx="60" ry="20" fill="#78350f"/>
-  <path d="M40 60 Q100 0 160 60 L140 200 Q100 230 60 200 Z" fill="#a16207"/>
-  <ellipse cx="100" cy="60" rx="60" ry="25" fill="#15803d"/>
-  <rect x="130" y="0" width="10" height="80" fill="silver"/>
-</svg>
+<img id="coin" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAOEAAADhCAYAAAA+7+0NAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH5QgIECMJm2uVHAAAABl0RVh0Q29tbWVudABDcmVhdGVkIHdpdGggR0lNUFeBDhcAAAASSURBVHja7cEBDQAAAMKg909tDjegAAAAAAAAAAAAAAAAgK8G3QAAAWoX8JkAAAAASUVORK5CYII=">
+
+<div>
+<button class="btn" onclick="openMissions()">🎯 Misiones</button>
+<button class="btn" onclick="openRanking()">🏆 Ranking</button>
+<button class="btn" onclick="openRef()">👥 Referidos</button>
+</div>
+
+<div id="panel" class="panel" style="display:none;"></div>
+
+<audio id="tapSound">
+<source src="data:audio/mp3;base64,//uQxAAAAAAAAAAAAAAAAAAAA..." type="audio/mp3">
+</audio>
 
 <script>
-let points=0;
-const mate=document.getElementById("mate");
-const pointsText=document.getElementById("points");
 
-/* 🔊 SONIDO GENERADO */
-function playSound(type){
-  const ctx=new (window.AudioContext||window.webkitAudioContext)();
-  const osc=ctx.createOscillator();
-  const gain=ctx.createGain();
+let score = 0
+let lastTap = 0
+let tapCountSecond = 0
+let referCode = localStorage.getItem("ref") || generateRef()
+let missions = JSON.parse(localStorage.getItem("missions")) || {daily:0,done:false}
 
-  osc.connect(gain);
-  gain.connect(ctx.destination);
+document.getElementById("score").innerText = score
 
-  if(type==="click") osc.frequency.value=400;
-  if(type==="power") osc.frequency.value=800;
-  if(type==="badge") osc.frequency.value=1200;
+const coin = document.getElementById("coin")
 
-  gain.gain.value=0.1;
-  osc.start();
-  osc.stop(ctx.currentTime+0.1);
+coin.addEventListener("click", e=>{
+let now = Date.now()
+
+// ANTI TRAMPAS
+if(now-lastTap < 50){
+alert("⚠️ Trampa detectada")
+return
 }
 
-/* ✨ PARTICULAS DE FONDO */
-const canvas=document.getElementById("bg");
-const ctx=canvas.getContext("2d");
-canvas.width=window.innerWidth;
-canvas.height=window.innerHeight;
+lastTap = now
 
-let particles=[];
-for(let i=0;i<120;i++){
-  particles.push({
-    x:Math.random()*canvas.width,
-    y:Math.random()*canvas.height,
-    r:Math.random()*3+1,
-    dx:(Math.random()-0.5)*1,
-    dy:(Math.random()-0.5)*1
-  });
+score++
+document.getElementById("score").innerText = score
+document.getElementById("tapSound").play()
+
+floatEffect(e.pageX,e.pageY)
+
+saveLocal()
+})
+
+function floatEffect(x,y){
+let el = document.createElement("div")
+el.className="float"
+el.innerText="+1"
+el.style.left=x+"px"
+el.style.top=y+"px"
+document.body.appendChild(el)
+setTimeout(()=>el.remove(),1000)
 }
 
-function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  particles.forEach(p=>{
-    ctx.beginPath();
-    ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
-    ctx.fillStyle="rgba(34,197,94,0.5)";
-    ctx.fill();
-    p.x+=p.dx;
-    p.y+=p.dy;
-    if(p.x<0||p.x>canvas.width)p.dx*=-1;
-    if(p.y<0||p.y>canvas.height)p.dy*=-1;
-  });
-  requestAnimationFrame(draw);
+function openMissions(){
+let p = document.getElementById("panel")
+p.style.display="block"
+p.innerHTML=`
+<h3>🎯 Misión diaria</h3>
+<p>Haz 50 mates</p>
+<p>Progreso: ${score}/50</p>
+<button class="btn" onclick="claimMission()">Reclamar</button>
+`
 }
-draw();
 
-/* 🧉 CLICK EVENT */
-mate.addEventListener("click",(e)=>{
-  points++;
-  pointsText.innerText=points+" 🧉";
-  playSound("click");
+function claimMission(){
+if(score>=50 && !missions.done){
+score+=100
+missions.done=true
+alert("🎉 +100 Bonus!")
+saveLocal()
+}
+}
 
-  // puntos flotantes
-  const plus=document.createElement("div");
-  plus.className="floating";
-  plus.innerText="+1";
-  plus.style.left=e.pageX+"px";
-  plus.style.top=e.pageY+"px";
-  document.body.appendChild(plus);
-  setTimeout(()=>plus.remove(),1000);
+function openRanking(){
+let p=document.getElementById("panel")
+p.style.display="block"
+p.innerHTML="<h3>🏆 Ranking Global</h3><div id='rank'></div>"
+loadRanking()
+}
 
-  // power cada 10
-  if(points%10===0){
-    playSound("power");
-    document.body.style.background="radial-gradient(circle,#065f46,#020617)";
-    setTimeout(()=>{
-      document.body.style.background="radial-gradient(circle,#0f172a,#020617)";
-    },300);
-  }
+function loadRanking(){
+let fakeRank=[
+{name:"Jugador1",score:2000},
+{name:"Jugador2",score:1500},
+{name:"Marco",score:score}
+]
 
-  // badge cada 50
-  if(points%50===0){
-    playSound("badge");
-    alert("🔥 LOGRO DESBLOQUEADO 🔥");
-  }
-});
+fakeRank.sort((a,b)=>b.score-a.score)
+
+let html=""
+fakeRank.forEach((u,i)=>{
+html+=`<div class="rankItem"><span>#${i+1} ${u.name}</span><span>${u.score}</span></div>`
+})
+document.getElementById("rank").innerHTML=html
+}
+
+function openRef(){
+let p=document.getElementById("panel")
+p.style.display="block"
+p.innerHTML=`
+<h3>👥 Referidos</h3>
+<p>Tu código:</p>
+<h2>${referCode}</h2>
+<p>Comparte tu link:</p>
+<p>?ref=${referCode}</p>
+`
+}
+
+function generateRef(){
+let code="MATE"+Math.floor(Math.random()*9999)
+localStorage.setItem("ref",code)
+return code
+}
+
+function saveLocal(){
+localStorage.setItem("score",score)
+localStorage.setItem("missions",JSON.stringify(missions))
+}
+
+score = parseInt(localStorage.getItem("score")) || 0
+document.getElementById("score").innerText = score
+
 </script>
 
 </body>
